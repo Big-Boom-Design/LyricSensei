@@ -106,12 +106,26 @@ export default function Home() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {currentTrackError && (
-          <Alert className="mb-6" data-testid="alert-error">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Unable to connect to Spotify. Make sure you've authorized the Spotify connection in your Replit settings.
-            </AlertDescription>
-          </Alert>
+          <div className="space-y-4 mb-6">
+            <Alert data-testid="alert-error">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Spotify Playback API Issue</strong>
+                <p className="mt-2">The "Now Playing" feature requires:</p>
+                <ul className="list-disc list-inside mt-1 ml-2 space-y-1">
+                  <li>A Spotify Premium account</li>
+                  <li>Your account to be allowlisted for this app</li>
+                  <li>Active music playback</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+            <Alert className="border-primary/50">
+              <SearchIcon className="h-4 w-4 text-primary" />
+              <AlertDescription>
+                <strong>Try the Search tab instead!</strong> Search works for everyone and lets you explore any song's lyrics and AI-powered meanings.
+              </AlertDescription>
+            </Alert>
+          </div>
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
