@@ -33,20 +33,22 @@ export default function SongMeaningPanel({ meaning }: SongMeaningPanelProps) {
         </div>
       )}
 
-      <div className="space-y-2 pt-2">
-        <h4 className="font-medium text-sm text-muted-foreground">Key Themes</h4>
-        <div className="flex flex-wrap gap-2" data-testid="container-themes">
-          {meaning.themes.map((theme, index) => (
-            <Badge 
-              key={index} 
-              variant="secondary"
-              data-testid={`badge-theme-${index}`}
-            >
-              {theme}
-            </Badge>
-          ))}
+      {meaning.themes && meaning.themes.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <h4 className="font-medium text-sm text-muted-foreground">Key Themes</h4>
+          <div className="flex flex-wrap gap-2" data-testid="container-themes">
+            {meaning.themes.map((theme, index) => (
+              <Badge 
+                key={index} 
+                variant="secondary"
+                data-testid={`badge-theme-${index}`}
+              >
+                {theme}
+              </Badge>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </Card>
   );
 }

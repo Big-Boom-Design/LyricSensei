@@ -1,22 +1,25 @@
 import { SpotifyTrack, LyricLine, SongMeaning } from "@shared/schema";
 
-export async function getCurrentTrack(): Promise<{ playing: boolean; track?: SpotifyTrack }> {
-  const response = await fetch('/api/spotify/current-track');
+export async function getCurrentTrack(isDemoMode: boolean = false): Promise<{ playing: boolean; track?: SpotifyTrack }> {
+  const endpoint = isDemoMode ? '/api/demo/current-track' : '/api/spotify/current-track';
+  const response = await fetch(endpoint);
   if (!response.ok) throw new Error('Failed to fetch current track');
   return response.json();
 }
 
-export async function searchTracks(query: string): Promise<{ tracks: SpotifyTrack[] }> {
-  const response = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}`);
+export async function searchTracks(query: string, isDemoMode: boolean = false): Promise<{ tracks: SpotifyTrack[] }> {
+  const endpoint = isDemoMode ? '/api/demo/search' : '/api/spotify/search';
+  const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`);
   if (!response.ok) throw new Error('Failed to search tracks');
   return response.json();
 }
 
-export async function getLyricsAndMeaning(trackId: string): Promise<{
+export async function getLyricsAndMeaning(trackId: string, isDemoMode: boolean = false): Promise<{
   lyrics: LyricLine[];
   meaning: SongMeaning;
 }> {
-  const response = await fetch(`/api/lyrics/${trackId}`);
+  const endpoint = isDemoMode ? '/api/demo/lyrics' : '/api/lyrics';
+  const response = await fetch(`${endpoint}/${trackId}`);
   if (!response.ok) throw new Error('Failed to fetch lyrics');
   return response.json();
 }

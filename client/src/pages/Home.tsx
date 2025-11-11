@@ -7,7 +7,7 @@ import SearchBar from "@/components/SearchBar";
 import SearchResultCard from "@/components/SearchResultCard";
 import ThemeToggle from "@/components/ThemeToggle";
 import { SpotifyTrack, LyricLine, SongMeaning } from "@shared/schema";
-import { Music, Search as SearchIcon, AlertCircle } from "lucide-react";
+import { Music, Search as SearchIcon, AlertCircle, Info } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SiSpotify } from "react-icons/si";
 import { Button } from "@/components/ui/button";
@@ -15,25 +15,37 @@ import { getCurrentTrack, searchTracks, getLyricsAndMeaning, explainLyric } from
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { queryClient } from "@/lib/queryClient";
+import { useDemoMode } from "@/contexts/DemoContext";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("now-playing");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [lyricExplanations, setLyricExplanations] = useState<Record<string, string>>({});
+  
+  const { isDemoMode, setSpotifyFailureDetected, disableDemoMode } = useDemoMode();
 
   // Query for current track
   const { data: currentTrackData, error: currentTrackError } = useQuery({
-    queryKey: ['/api/spotify/current-track'],
-    queryFn: getCurrentTrack,
-    refetchInterval: 5000, // Poll every 5 seconds
+    queryKey: isDemoMode ? ['/api/demo/current-track'] : ['/api/spotify/current-track'],
+    queryFn: () => getCurrentTrack(isDemoMode),
+    refetchInterval: isDemoMode ? false : 5000,
+    retry: false,
   });
+
+  // Detect Spotify failures
+  useEffect(() => {
+    if (currentTrackError && !isDemoMode) {
+      setSpotifyFailureDetected(true);
+    }
+  }, [currentTrackError, isDemoMode, setSpotifyFailureDetected]);
 
   // Query for search results
   const { data: searchData, isLoading: isSearching } = useQuery({
-    queryKey: ['/api/spotify/search', searchQuery],
-    queryFn: () => searchTracks(searchQuery),
+    queryKey: isDemoMode ? ['/api/demo/search', searchQuery] : ['/api/spotify/search', searchQuery],
+    queryFn: () => searchTracks(searchQuery, isDemoMode),
     enabled: !!searchQuery,
+    retry: false,
   });
 
   // Determine which track to show lyrics for
@@ -41,8 +53,8 @@ export default function Home() {
 
   // Query for lyrics and meaning
   const { data: lyricsData, isLoading: isLoadingLyrics } = useQuery({
-    queryKey: ['/api/lyrics', trackToShow?.id],
-    queryFn: () => getLyricsAndMeaning(trackToShow!.id),
+    queryKey: isDemoMode ? ['/api/demo/lyrics', trackToShow?.id] : ['/api/lyrics', trackToShow?.id],
+    queryFn: () => getLyricsAndMeaning(trackToShow!.id, isDemoMode),
     enabled: !!trackToShow,
   });
 
@@ -105,7 +117,33 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {currentTrackError && (
+        {isDemoMode && (
+          <Alert className="mb-6 bg-primary/10 border-primary" data-testid="alert-demo-mode">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertDescription className="flex items-center justify-between">
+              <div>
+                <strong className="text-primary">Demo Mode Active</strong>
+                <p className="mt-1 text-sm">
+                  Spotify connection unavailable. Exploring demo tracks with AI-powered explanations.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  disableDemoMode();
+                  queryClient.invalidateQueries({ queryKey: ['/api/spotify/current-track'] });
+                }}
+                data-testid="button-retry-spotify"
+                className="ml-4 shrink-0"
+              >
+                Retry Spotify
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {currentTrackError && !isDemoMode && (
           <div className="space-y-4 mb-6">
             <Alert data-testid="alert-error">
               <AlertCircle className="h-4 w-4" />
@@ -122,7 +160,7 @@ export default function Home() {
             <Alert className="border-primary/50">
               <SearchIcon className="h-4 w-4 text-primary" />
               <AlertDescription>
-                <strong>Try the Search tab instead!</strong> Search works for everyone and lets you explore any song's lyrics and AI-powered meanings.
+                <strong>Switching to Demo Mode...</strong> You can now explore demo tracks and AI-powered lyric explanations!
               </AlertDescription>
             </Alert>
           </div>

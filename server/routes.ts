@@ -4,8 +4,16 @@ import { storage } from "./storage";
 import { getUncachableSpotifyClient } from "./spotify";
 import { fetchLyrics, getLyricsAsText } from "./lyrics";
 import { generateSongMeaning, generateLyricMeaning } from "./openai";
+import { registerDemoRoutes } from "./demoRoutes";
+import type { TrackItem, Track } from "@spotify/web-api-ts-sdk";
+
+// Type guard to narrow TrackItem to Track
+function isTrack(item: TrackItem | null): item is Track {
+  return item?.type === 'track';
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  registerDemoRoutes(app);
   // Get currently playing track
   app.get("/api/spotify/current-track", async (req, res) => {
     try {
@@ -17,7 +25,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const item = playback.item;
-      if (item.type !== 'track') {
+      if (!isTrack(item)) {
         return res.json({ playing: false });
       }
 
