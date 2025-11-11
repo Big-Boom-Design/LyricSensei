@@ -20,6 +20,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("now-playing");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
+  const [lyricExplanations, setLyricExplanations] = useState<Record<string, string>>({});
 
   // Query for current track
   const { data: currentTrackData, error: currentTrackError } = useQuery({
@@ -49,10 +50,26 @@ export default function Home() {
   const explainMutation = useMutation({
     mutationFn: (params: { lyricLine: string; songName: string; artistName: string; fullLyrics: string }) =>
       explainLyric(params.lyricLine, params.songName, params.artistName, params.fullLyrics),
+    onSuccess: (data, variables) => {
+      // Store the explanation keyed by the lyric line
+      setLyricExplanations(prev => ({
+        ...prev,
+        [variables.lyricLine]: data.explanation
+      }));
+    }
   });
 
+  // Merge explanations into lyrics data
+  const lyricsWithExplanations = lyricsData ? {
+    ...lyricsData,
+    lyrics: lyricsData.lyrics.map(line => ({
+      ...line,
+      meaning: line.meaning || lyricExplanations[line.text]
+    }))
+  } : null;
+
   const handleLineClick = (line: LyricLine) => {
-    if (!line.meaning && trackToShow && lyricsData) {
+    if (!line.meaning && trackToShow && lyricsData && !lyricExplanations[line.text]) {
       const fullLyrics = lyricsData.lyrics.map(l => l.text).join('\n');
       explainMutation.mutate({
         lyricLine: line.text,
@@ -65,6 +82,7 @@ export default function Home() {
 
   const handleTrackSelect = (track: SpotifyTrack) => {
     setSelectedTrack(track);
+    setLyricExplanations({}); // Reset explanations for new track
     setActiveTab('now-playing');
   };
 
@@ -91,7 +109,7 @@ export default function Home() {
           <Alert className="mb-6" data-testid="alert-error">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Unable to connect to Spotify. Make sure you've authorized the Spotify connection.
+              Unable to connect to Spotify. Make sure you've authorized the Spotify connection in your Replit settings.
             </AlertDescription>
           </Alert>
         )}
@@ -140,16 +158,16 @@ export default function Home() {
                       <Skeleton className="h-32 w-full" />
                       <Skeleton className="h-64 w-full" />
                     </div>
-                  ) : lyricsData ? (
+                  ) : lyricsWithExplanations ? (
                     <>
-                      <SongMeaningPanel meaning={lyricsData.meaning} />
+                      <SongMeaningPanel meaning={lyricsWithExplanations.meaning} />
                       
                       <div className="rounded-lg border bg-card p-8">
                         <h2 className="text-2xl font-bold mb-8 text-center" data-testid="text-lyrics-title">
                           Lyrics
                         </h2>
                         <LyricsDisplay 
-                          lyrics={lyricsData.lyrics}
+                          lyrics={lyricsWithExplanations.lyrics}
                           onLineClick={handleLineClick}
                         />
                       </div>
@@ -180,15 +198,21 @@ export default function Home() {
                 <h2 className="text-xl font-semibold mb-4" data-testid="text-search-results">
                   Search Results for "{searchQuery}"
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {searchData.tracks.map(track => (
-                    <SearchResultCard 
-                      key={track.id} 
-                      track={track}
-                      onClick={() => handleTrackSelect(track)}
-                    />
-                  ))}
-                </div>
+                {searchData.tracks.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No results found
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {searchData.tracks.map(track => (
+                      <SearchResultCard 
+                        key={track.id} 
+                        track={track}
+                        onClick={() => handleTrackSelect(track)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : !searchQuery ? (
               <div className="text-center py-16 space-y-4">

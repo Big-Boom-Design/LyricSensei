@@ -51,6 +51,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const spotify = await getUncachableSpotifyClient();
       const results = await spotify.search(query, ['track'], undefined, 20);
 
+      if (!results.tracks || !results.tracks.items) {
+        return res.json({ tracks: [] });
+      }
+
       const tracks = results.tracks.items.map((track: any) => ({
         id: track.id,
         name: track.name,
