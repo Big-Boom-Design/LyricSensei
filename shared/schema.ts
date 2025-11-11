@@ -16,3 +16,28 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Frontend types for Spotify and Lyrics
+export interface SpotifyTrack {
+  id: string;
+  name: string;
+  artists: string[];
+  album: string;
+  albumArt: string;
+  duration: number;
+  currentPosition?: number;
+  isPlaying?: boolean;
+}
+
+export interface LyricLine {
+  id: string;
+  text: string;
+  timestamp?: number;
+  meaning?: string;
+}
+
+export interface SongMeaning {
+  overview: string;
+  themes: string[];
+  context?: string;
+}
